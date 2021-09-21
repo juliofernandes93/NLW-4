@@ -1,10 +1,13 @@
 import { Request, Response } from 'express';
 import { getCustomRepository } from 'typeorm';
-import { UsersRepository } from '../repositories/UsersRepository';
+import { UsersRepository } from '../repositories/UsersRepository'
+
+ import * as bcrypt from 'bcrypt'
 
 class UserController{
     async create(request: Request, response: Response){
-        const {name, email} = request.body;
+        const {name, email, password} = request.body
+        const passwordHash = await bcrypt.hash(password, 8)
         const usersRepository = getCustomRepository(UsersRepository)
         const userAlreadyExists = await usersRepository.findOne({
             email
@@ -15,10 +18,12 @@ class UserController{
             })
         }
         const user = usersRepository.create({
-            name, email
+            name, email, password: passwordHash
         })
 
         await usersRepository.save(user)
+
+        delete user.password;
 
         return response.status(201).json(user);
     }
